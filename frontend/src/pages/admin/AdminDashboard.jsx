@@ -3,12 +3,13 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import {
   Users, Stethoscope, Calendar, Layers, Shield,
-  CheckCircle2, XCircle, LogOut, HeartPulse, Plus
+  CheckCircle2, XCircle, LogOut, HeartPulse, Plus,
+  Trash2, FileText, Edit2, X
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('doctors'); // doctors, patients, appointments, departments
+  const [activeTab, setActiveTab] = useState('patients'); // patients (default), registered-doctors, doctor-verification, appointments, records, departments
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalDoctors: 0,
@@ -22,9 +23,42 @@ export default function AdminDashboard() {
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
   const [departments, setDepartments] = useState([]);
 
-  // New Department Form
+  // Patient Add/Edit Form State
+  const [showPatientForm, setShowPatientForm] = useState(false);
+  const [patientEditId, setPatientEditId] = useState(null);
+  const [patientForm, setPatientForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: 'Male',
+    bloodGroup: 'O+',
+    address: '',
+    emergencyContact: ''
+  });
+
+  // Doctor Add/Edit Form State
+  const [showDoctorForm, setShowDoctorForm] = useState(false);
+  const [doctorEditId, setDoctorEditId] = useState(null);
+  const [doctorForm, setDoctorForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    departmentId: '',
+    specialization: '',
+    qualification: '',
+    experienceYears: 5,
+    consultationFee: 600,
+    availableDays: 'Mon,Tue,Wed,Thu,Fri',
+    workingHours: '09:00 - 17:00'
+  });
+
+  // Department Form State
   const [showDeptForm, setShowDeptForm] = useState(false);
   const [deptName, setDeptName] = useState('');
   const [deptDesc, setDeptDesc] = useState('');
@@ -47,10 +81,139 @@ export default function AdminDashboard() {
       const appts = await api.get('/admin/appointments');
       setAppointments(appts || []);
 
+      const recs = await api.get('/admin/records/prescriptions');
+      setPrescriptions(recs || []);
+
       const depts = await api.get('/admin/departments');
       setDepartments(depts || []);
     } catch (e) {
       console.error('Error loading admin data', e);
+    }
+  };
+
+  // --- PATIENT HANDLERS ---
+  const openAddPatient = () => {
+    setPatientEditId(null);
+    setPatientForm({
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      dateOfBirth: '',
+      gender: 'Male',
+      bloodGroup: 'O+',
+      address: '',
+      emergencyContact: ''
+    });
+    setShowPatientForm(true);
+  };
+
+  const openEditPatient = (p) => {
+    setPatientEditId(p.userId || p.id);
+    setPatientForm({
+      fullName: p.fullName || '',
+      email: p.email || '',
+      password: '',
+      phone: p.phone || '',
+      dateOfBirth: p.dateOfBirth || '',
+      gender: p.gender || 'Male',
+      bloodGroup: p.bloodGroup || 'O+',
+      address: p.address || '',
+      emergencyContact: p.emergencyContact || ''
+    });
+    setShowPatientForm(true);
+  };
+
+  const handleSavePatient = async (e) => {
+    e.preventDefault();
+    try {
+      if (patientEditId) {
+        await api.put(`/admin/patients/${patientEditId}`, patientForm);
+        alert('Patient details updated successfully!');
+      } else {
+        await api.post('/admin/patients', patientForm);
+        alert('New patient added successfully!');
+      }
+      setShowPatientForm(false);
+      loadData();
+    } catch (err) {
+      alert(err.message || 'Error saving patient details');
+    }
+  };
+
+  const handleDeletePatient = async (userId, name) => {
+    if (window.confirm(`Are you sure you want to permanently delete patient "${name}" and all their associated records? This action cannot be undone.`)) {
+      try {
+        await api.delete(`/admin/patients/${userId}`);
+        loadData();
+      } catch (err) {
+        alert(err.message || 'Error deleting patient');
+      }
+    }
+  };
+
+  // --- DOCTOR HANDLERS ---
+  const openAddDoctor = () => {
+    setDoctorEditId(null);
+    setDoctorForm({
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      departmentId: departments.length > 0 ? departments[0].id : '',
+      specialization: '',
+      qualification: '',
+      experienceYears: 5,
+      consultationFee: 600,
+      availableDays: 'Mon,Tue,Wed,Thu,Fri',
+      workingHours: '09:00 - 17:00'
+    });
+    setShowDoctorForm(true);
+  };
+
+  const openEditDoctor = (d) => {
+    setDoctorEditId(d.userId || d.id);
+    setDoctorForm({
+      fullName: d.fullName || '',
+      email: d.email || '',
+      password: '',
+      phone: d.phone || '',
+      departmentId: d.departmentId || '',
+      specialization: d.specialization || '',
+      qualification: d.qualification || '',
+      experienceYears: d.experienceYears || 5,
+      consultationFee: d.consultationFee || 600,
+      availableDays: d.availableDays || 'Mon,Tue,Wed,Thu,Fri',
+      workingHours: d.workingHours || '09:00 - 17:00'
+    });
+    setShowDoctorForm(true);
+  };
+
+  const handleSaveDoctor = async (e) => {
+    e.preventDefault();
+    try {
+      if (doctorEditId) {
+        await api.put(`/admin/doctors/${doctorEditId}`, doctorForm);
+        alert('Doctor details updated successfully!');
+      } else {
+        await api.post('/admin/doctors', doctorForm);
+        alert('New doctor registered and added successfully!');
+      }
+      setShowDoctorForm(false);
+      loadData();
+    } catch (err) {
+      alert(err.message || 'Error saving doctor details');
+    }
+  };
+
+  const handleDeleteDoctor = async (userId, name) => {
+    if (window.confirm(`Are you sure you want to permanently delete Dr. "${name}" and their clinical profile? This action cannot be undone.`)) {
+      try {
+        await api.delete(`/admin/doctors/${userId}`);
+        loadData();
+      } catch (err) {
+        alert(err.message || 'Error deleting doctor');
+      }
     }
   };
 
@@ -62,6 +225,29 @@ export default function AdminDashboard() {
         loadData();
       } catch (err) {
         alert(err.message || 'Error processing doctor verification');
+      }
+    }
+  };
+
+  // --- APPOINTMENT & PRESCRIPTION HANDLERS ---
+  const handleDeleteAppointment = async (id) => {
+    if (window.confirm(`Are you sure you want to delete appointment record #${id}?`)) {
+      try {
+        await api.delete(`/admin/appointments/${id}`);
+        loadData();
+      } catch (err) {
+        alert(err.message || 'Error deleting appointment record');
+      }
+    }
+  };
+
+  const handleDeletePrescription = async (id) => {
+    if (window.confirm(`Are you sure you want to delete medical prescription record #${id}?`)) {
+      try {
+        await api.delete(`/admin/records/prescriptions/${id}`);
+        loadData();
+      } catch (err) {
+        alert(err.message || 'Error deleting prescription record');
       }
     }
   };
@@ -101,28 +287,40 @@ export default function AdminDashboard() {
 
         <nav className="sidebar-nav">
           <button
-            onClick={() => setActiveTab('doctors')}
-            className={`sidebar-item ${activeTab === 'doctors' ? 'active' : ''}`}
-          >
-            <Stethoscope size={18} /> Doctor Verification ({stats.pendingDoctors})
-          </button>
-          <button
             onClick={() => setActiveTab('patients')}
             className={`sidebar-item ${activeTab === 'patients' ? 'active' : ''}`}
           >
-            <Users size={18} /> Registered Patients
+            <Users size={18} /> Registered Patients ({patients.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('registered-doctors')}
+            className={`sidebar-item ${activeTab === 'registered-doctors' ? 'active' : ''}`}
+          >
+            <Stethoscope size={18} /> Registered Doctors ({doctors.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('doctor-verification')}
+            className={`sidebar-item ${activeTab === 'doctor-verification' ? 'active' : ''}`}
+          >
+            <CheckCircle2 size={18} /> Doctor Verification ({stats.pendingDoctors})
           </button>
           <button
             onClick={() => setActiveTab('appointments')}
             className={`sidebar-item ${activeTab === 'appointments' ? 'active' : ''}`}
           >
-            <Calendar size={18} /> Platform Appointments
+            <Calendar size={18} /> Platform Appointments ({appointments.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('records')}
+            className={`sidebar-item ${activeTab === 'records' ? 'active' : ''}`}
+          >
+            <FileText size={18} /> Medical Records ({prescriptions.length})
           </button>
           <button
             onClick={() => setActiveTab('departments')}
             className={`sidebar-item ${activeTab === 'departments' ? 'active' : ''}`}
           >
-            <Layers size={18} /> Medical Departments
+            <Layers size={18} /> Medical Departments ({departments.length})
           </button>
         </nav>
 
@@ -161,13 +359,446 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* TAB 1: DOCTOR MANAGEMENT & VERIFICATION */}
-        {activeTab === 'doctors' && (
+        {/* =========================================================================
+            TAB 1: REGISTERED PATIENTS (THE FIRST PAGE)
+            Features: View all patients, Add Patient, Modify Patient Details, Delete Patient
+        ========================================================================== */}
+        {activeTab === 'patients' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Doctor Verification &amp; Management</h2>
-                <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Evaluate medical credentials and approve clinical login privileges</p>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Registered Patients &amp; Records Management</h2>
+                <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Manage patient demographics, add new patients, edit details, or remove accounts</p>
+              </div>
+              <button onClick={openAddPatient} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} /> Add Patient
+              </button>
+            </div>
+
+            {/* Expandable Add / Modify Patient Form */}
+            {showPatientForm && (
+              <div className="card" style={{ marginBottom: '24px', background: '#F8FBF9', border: '1px solid #CDE1D9', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#145C4B' }}>
+                    {patientEditId ? 'Modify Patient Details' : 'Add New Patient'}
+                  </h3>
+                  <button onClick={() => setShowPatientForm(false)} className="btn btn-outline btn-sm" style={{ padding: '4px 8px' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <form onSubmit={handleSavePatient}>
+                  <div className="grid-2" style={{ gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        value={patientForm.fullName}
+                        onChange={e => setPatientForm({ ...patientForm, fullName: e.target.value })}
+                        placeholder="e.g. Aarav Sharma"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        disabled={!!patientEditId}
+                        className="form-control"
+                        value={patientForm.email}
+                        onChange={e => setPatientForm({ ...patientForm, email: e.target.value })}
+                        placeholder="e.g. aarav.sharma@example.com"
+                      />
+                    </div>
+                    {!patientEditId && (
+                      <div className="form-group">
+                        <label className="form-label">Account Password *</label>
+                        <input
+                          type="password"
+                          required
+                          className="form-control"
+                          value={patientForm.password}
+                          onChange={e => setPatientForm({ ...patientForm, password: e.target.value })}
+                          placeholder="Min 6 characters"
+                        />
+                      </div>
+                    )}
+                    <div className="form-group">
+                      <label className="form-label">Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        className="form-control"
+                        value={patientForm.phone}
+                        onChange={e => setPatientForm({ ...patientForm, phone: e.target.value })}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Date of Birth</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={patientForm.dateOfBirth}
+                        onChange={e => setPatientForm({ ...patientForm, dateOfBirth: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Gender</label>
+                      <select
+                        className="form-control"
+                        value={patientForm.gender}
+                        onChange={e => setPatientForm({ ...patientForm, gender: e.target.value })}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Blood Group</label>
+                      <select
+                        className="form-control"
+                        value={patientForm.bloodGroup}
+                        onChange={e => setPatientForm({ ...patientForm, bloodGroup: e.target.value })}
+                      >
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Emergency Contact Phone</label>
+                      <input
+                        type="tel"
+                        className="form-control"
+                        value={patientForm.emergencyContact}
+                        onChange={e => setPatientForm({ ...patientForm, emergencyContact: e.target.value })}
+                        placeholder="+91 98765 00001"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label className="form-label">Residential Address</label>
+                    <textarea
+                      rows="2"
+                      className="form-control"
+                      value={patientForm.address}
+                      onChange={e => setPatientForm({ ...patientForm, address: e.target.value })}
+                      placeholder="Enter street and city address..."
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                    <button type="submit" className="btn btn-primary btn-sm">
+                      {patientEditId ? 'Update Patient Details' : 'Save Patient'}
+                    </button>
+                    <button type="button" onClick={() => setShowPatientForm(false)} className="btn btn-outline btn-sm">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Patients Table */}
+            <div className="table-wrapper">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Patient Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Gender</th>
+                    <th>Blood Group</th>
+                    <th>Address</th>
+                    <th>Emergency Contact</th>
+                    <th>Management Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients.map(p => (
+                    <tr key={p.id || p.userId}>
+                      <td style={{ fontWeight: '600', color: '#193B34' }}>{p.fullName}</td>
+                      <td>{p.email}</td>
+                      <td>{p.phone}</td>
+                      <td>{p.gender || 'N/A'}</td>
+                      <td><span className="badge badge-mint">{p.bloodGroup || 'O+'}</span></td>
+                      <td style={{ fontSize: '0.85rem', color: '#687B74' }}>{p.address || 'N/A'}</td>
+                      <td style={{ fontSize: '0.85rem', color: '#687B74' }}>{p.emergencyContact || 'N/A'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEditPatient(p)}
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Modify patient details"
+                          >
+                            <Edit2 size={13} /> Modify Details
+                          </button>
+                          <button
+                            onClick={() => handleDeletePatient(p.userId || p.id, p.fullName)}
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', color: '#DE350B', borderColor: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Permanently remove patient and associated records"
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {patients.length === 0 && (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', color: '#687B74', padding: '24px' }}>
+                        No registered patients found. Click "+ Add Patient" to register one.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 2: REGISTERED DOCTORS (NEW SIDEBAR ITEM)
+            Features: View all registered doctors, Add Doctor, Modify Doctor Details, Delete Doctor
+        ========================================================================== */}
+        {activeTab === 'registered-doctors' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Registered Doctors</h2>
+                <p style={{ color: '#687B74', fontSize: '0.9rem' }}>All active clinical practitioners, specialists, and departmental consultants</p>
+              </div>
+              <button onClick={openAddDoctor} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} /> Add Doctor
+              </button>
+            </div>
+
+            {/* Expandable Add / Modify Doctor Form */}
+            {showDoctorForm && (
+              <div className="card" style={{ marginBottom: '24px', background: '#F8FBF9', border: '1px solid #CDE1D9', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#145C4B' }}>
+                    {doctorEditId ? 'Modify Doctor Details' : 'Register New Doctor'}
+                  </h3>
+                  <button onClick={() => setShowDoctorForm(false)} className="btn btn-outline btn-sm" style={{ padding: '4px 8px' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <form onSubmit={handleSaveDoctor}>
+                  <div className="grid-2" style={{ gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Doctor Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        value={doctorForm.fullName}
+                        onChange={e => setDoctorForm({ ...doctorForm, fullName: e.target.value })}
+                        placeholder="e.g. Dr. Rajesh Iyer"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        disabled={!!doctorEditId}
+                        className="form-control"
+                        value={doctorForm.email}
+                        onChange={e => setDoctorForm({ ...doctorForm, email: e.target.value })}
+                        placeholder="e.g. rajesh.iyer@healthandcare.com"
+                      />
+                    </div>
+                    {!doctorEditId && (
+                      <div className="form-group">
+                        <label className="form-label">Account Password *</label>
+                        <input
+                          type="password"
+                          required
+                          className="form-control"
+                          value={doctorForm.password}
+                          onChange={e => setDoctorForm({ ...doctorForm, password: e.target.value })}
+                          placeholder="Min 6 characters"
+                        />
+                      </div>
+                    )}
+                    <div className="form-group">
+                      <label className="form-label">Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        className="form-control"
+                        value={doctorForm.phone}
+                        onChange={e => setDoctorForm({ ...doctorForm, phone: e.target.value })}
+                        placeholder="+91 98111 22334"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Department *</label>
+                      <select
+                        className="form-control"
+                        value={doctorForm.departmentId}
+                        onChange={e => setDoctorForm({ ...doctorForm, departmentId: e.target.value })}
+                      >
+                        <option value="">Select Clinical Department</option>
+                        {departments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Specialization *</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        value={doctorForm.specialization}
+                        onChange={e => setDoctorForm({ ...doctorForm, specialization: e.target.value })}
+                        placeholder="e.g. Interventional Cardiology"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Qualification *</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        value={doctorForm.qualification}
+                        onChange={e => setDoctorForm({ ...doctorForm, qualification: e.target.value })}
+                        placeholder="e.g. MD, DM (Cardiology)"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Experience (Years)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="60"
+                        className="form-control"
+                        value={doctorForm.experienceYears}
+                        onChange={e => setDoctorForm({ ...doctorForm, experienceYears: parseInt(e.target.value, 10) || 0 })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Consultation Fee (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-control"
+                        value={doctorForm.consultationFee}
+                        onChange={e => setDoctorForm({ ...doctorForm, consultationFee: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Available Days</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={doctorForm.availableDays}
+                        onChange={e => setDoctorForm({ ...doctorForm, availableDays: e.target.value })}
+                        placeholder="Mon,Tue,Wed,Thu,Fri"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                    <button type="submit" className="btn btn-primary btn-sm">
+                      {doctorEditId ? 'Update Doctor Details' : 'Register Doctor'}
+                    </button>
+                    <button type="button" onClick={() => setShowDoctorForm(false)} className="btn btn-outline btn-sm">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Doctors Table */}
+            <div className="table-wrapper">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Doctor Name</th>
+                    <th>Email &amp; Phone</th>
+                    <th>Department</th>
+                    <th>Specialization</th>
+                    <th>Qualification</th>
+                    <th>Experience</th>
+                    <th>Fee</th>
+                    <th>Status</th>
+                    <th>Management Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {doctors.map(d => (
+                    <tr key={d.id || d.userId}>
+                      <td style={{ fontWeight: '600', color: '#193B34' }}>{d.fullName}</td>
+                      <td>
+                        <div>{d.email}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#687B74' }}>{d.phone}</div>
+                      </td>
+                      <td><span className="badge badge-mint">{d.departmentName || 'General'}</span></td>
+                      <td style={{ fontWeight: '500' }}>{d.specialization}</td>
+                      <td style={{ fontSize: '0.85rem' }}>{d.qualification}</td>
+                      <td>{d.experienceYears} yrs</td>
+                      <td style={{ fontWeight: '600', color: '#145C4B' }}>₹{d.consultationFee}</td>
+                      <td>
+                        {d.verificationStatus === 'APPROVED' && <span className="badge badge-confirmed">Approved</span>}
+                        {d.verificationStatus === 'PENDING' && <span className="badge badge-pending">Pending Review</span>}
+                        {d.verificationStatus === 'REJECTED' && <span className="badge badge-rejected">Rejected</span>}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEditDoctor(d)}
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Modify doctor details"
+                          >
+                            <Edit2 size={13} /> Modify Details
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDoctor(d.userId || d.id, d.fullName)}
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', color: '#DE350B', borderColor: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Permanently remove doctor account"
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {doctors.length === 0 && (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', color: '#687B74', padding: '24px' }}>
+                        No registered doctors found. Click "+ Add Doctor" to register one.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 3: DOCTOR VERIFICATION (APPROVALS)
+        ========================================================================== */}
+        {activeTab === 'doctor-verification' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Doctor Verification &amp; Credential Approval</h2>
+                <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Evaluate clinical credentials, registration numbers, and approve login privileges</p>
               </div>
             </div>
 
@@ -191,7 +822,7 @@ export default function AdminDashboard() {
                       <td>{d.specialization}</td>
                       <td style={{ fontSize: '0.85rem' }}>{d.qualification}</td>
                       <td>{d.experienceYears} yrs</td>
-                      <td style={{ fontSize: '0.82rem', fontFamily: 'monospace' }}>{d.medicalRegistrationNo}</td>
+                      <td style={{ fontSize: '0.82rem', fontFamily: 'monospace' }}>{d.medicalRegistrationNo || 'N/A'}</td>
                       <td>
                         {d.verificationStatus === 'APPROVED' && <span className="badge badge-confirmed">Approved</span>}
                         {d.verificationStatus === 'PENDING' && <span className="badge badge-pending">Pending Review</span>}
@@ -221,55 +852,27 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: PATIENT MANAGEMENT */}
-        {activeTab === 'patients' && (
-          <div>
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Registered Patients</h2>
-              <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Demographics and emergency contact records</p>
-            </div>
-
-            <div className="table-wrapper">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>Patient Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Gender</th>
-                    <th>Blood Group</th>
-                    <th>Address</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: '600', color: '#193B34' }}>{p.fullName}</td>
-                      <td>{p.email}</td>
-                      <td>{p.phone}</td>
-                      <td>{p.gender || 'N/A'}</td>
-                      <td><span className="badge badge-mint">{p.bloodGroup || 'O+'}</span></td>
-                      <td style={{ fontSize: '0.85rem', color: '#687B74' }}>{p.address || 'N/A'}</td>
+                  {doctors.length === 0 && (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', color: '#687B74', padding: '24px' }}>
+                        No doctors awaiting verification.
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* TAB 3: APPOINTMENTS MONITORING */}
+        {/* =========================================================================
+            TAB 4: APPOINTMENTS MONITORING & MANAGEMENT
+        ========================================================================== */}
         {activeTab === 'appointments' && (
           <div>
             <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Platform Appointments</h2>
-              <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Real-time synchronization across all departments</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Platform Appointments &amp; Booking Records</h2>
+              <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Real-time synchronization across all departments with record audit controls</p>
             </div>
 
             <div className="table-wrapper">
@@ -284,6 +887,7 @@ export default function AdminDashboard() {
                     <th>Time</th>
                     <th>Status</th>
                     <th>Reason</th>
+                    <th>Management Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,15 +906,99 @@ export default function AdminDashboard() {
                         {a.status === 'CANCELLED' && <span className="badge badge-cancelled">Cancelled</span>}
                       </td>
                       <td style={{ fontSize: '0.85rem', color: '#687B74' }}>{a.reason}</td>
+                      <td>
+                        <button
+                          onClick={() => handleDeleteAppointment(a.id)}
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '4px 8px', fontSize: '0.78rem', color: '#DE350B', borderColor: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Delete appointment record"
+                        >
+                          <Trash2 size={13} /> Delete Record
+                        </button>
+                      </td>
                     </tr>
                   ))}
+                  {appointments.length === 0 && (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', color: '#687B74', padding: '24px' }}>
+                        No platform appointments recorded.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* TAB 4: DEPARTMENTS */}
+        {/* =========================================================================
+            TAB 5: MEDICAL RECORDS & PRESCRIPTIONS
+        ========================================================================== */}
+        {activeTab === 'records' && (
+          <div>
+            <div style={{ marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#145C4B' }}>Clinical Records &amp; Prescriptions</h2>
+              <p style={{ color: '#687B74', fontSize: '0.9rem' }}>Comprehensive management and deletion of clinical records, prescriptions, and consult notes</p>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Rx ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Specialization</th>
+                    <th>Diagnosis</th>
+                    <th>Prescription Items</th>
+                    <th>Date</th>
+                    <th>Management Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prescriptions.map(pr => (
+                    <tr key={pr.id}>
+                      <td><strong style={{ color: '#145C4B' }}>#RX-{pr.id}</strong></td>
+                      <td style={{ fontWeight: '600' }}>{pr.patientName}</td>
+                      <td>{pr.doctorName}</td>
+                      <td style={{ fontSize: '0.85rem' }}>{pr.doctorSpecialization}</td>
+                      <td style={{ fontWeight: '500', color: '#193B34' }}>{pr.diagnosis}</td>
+                      <td style={{ fontSize: '0.82rem' }}>
+                        {pr.items && pr.items.length > 0 ? (
+                          pr.items.map(i => `${i.medicineName} (${i.dosage})`).join(', ')
+                        ) : (
+                          <span style={{ color: '#687B74' }}>{pr.generalInstructions || 'Clinical note'}</span>
+                        )}
+                      </td>
+                      <td style={{ fontSize: '0.85rem', color: '#687B74' }}>{pr.issuedDate}</td>
+                      <td>
+                        <button
+                          onClick={() => handleDeletePrescription(pr.id)}
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '4px 8px', fontSize: '0.78rem', color: '#DE350B', borderColor: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Permanently remove clinical record"
+                        >
+                          <Trash2 size={13} /> Delete Record
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {prescriptions.length === 0 && (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', color: '#687B74', padding: '24px' }}>
+                        No clinical records or prescriptions found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 6: MEDICAL DEPARTMENTS
+        ========================================================================== */}
         {activeTab === 'departments' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

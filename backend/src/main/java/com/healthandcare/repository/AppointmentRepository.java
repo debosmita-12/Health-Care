@@ -137,6 +137,11 @@ public class AppointmentRepository {
         return jdbcTemplate.update(sql, status, notes, id) > 0;
     }
 
+    public boolean deleteById(Long id) {
+        String sql = "DELETE FROM appointments WHERE id = ?";
+        return jdbcTemplate.update(sql, id) > 0;
+    }
+
     public boolean isDoctorSlotTaken(Long doctorId, LocalDate date, String time) {
         String sql = "SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status IN ('PENDING', 'CONFIRMED')";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, doctorId, Date.valueOf(date), time);

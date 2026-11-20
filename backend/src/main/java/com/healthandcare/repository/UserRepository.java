@@ -110,6 +110,11 @@ public class UserRepository {
         return jdbcTemplate.update(sql, newHash, userId) > 0;
     }
 
+    public boolean deleteById(Long id) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        return jdbcTemplate.update(sql, id) > 0;
+    }
+
     public long countByRole(String role) {
         String sql = "SELECT COUNT(*) FROM users WHERE role = ?";
         Long count = jdbcTemplate.queryForObject(sql, Long.class, role);

@@ -95,4 +95,13 @@ public class ClinicalService {
     public List<Consultation> getConsultationsForPatient(Long patientId) {
         return consultationRepository.findByPatientId(patientId);
     }
+
+    public List<Prescription> getAllPrescriptions() {
+        return prescriptionRepository.findAll();
+    }
+
+    @Transactional
+    public boolean deletePrescription(Long id) {
+        return prescriptionRepository.deleteById(id);
+    }
 }

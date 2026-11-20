@@ -46,4 +46,14 @@ public class PatientService {
 
         return getProfileByUserId(userId);
     }
+
+    @Transactional
+    public boolean deletePatient(Long userId) {
+        patientRepository.deleteByUserId(userId);
+        return userRepository.deleteById(userId);
+    }
+
+    public boolean updateStatus(Long userId, String status) {
+        return userRepository.updateStatus(userId, status);
+    }
 }

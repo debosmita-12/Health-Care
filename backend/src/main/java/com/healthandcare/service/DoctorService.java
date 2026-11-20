@@ -75,4 +75,10 @@ public class DoctorService {
 
         return getProfileByUserId(userId);
     }
+
+    @Transactional
+    public boolean deleteDoctor(Long userId) {
+        doctorRepository.deleteByUserId(userId);
+        return userRepository.deleteById(userId);
+    }
 }

@@ -48,9 +48,12 @@ const fallbackStore = {
     { id: 6, name: 'Neurology & Brain Health', description: 'Cognitive health & nervous system care.', iconName: 'Brain', isActive: true }
   ],
   doctors: [
-    { id: 1, userId: 2, fullName: 'Dr. Rajesh Iyer', email: 'rajesh.iyer@healthandcare.com', phone: '+91 98111 22334', qualification: 'MD, DM (Cardiology)', specialization: 'Interventional Cardiology', experienceYears: 12, consultationFee: 800, departmentName: 'Cardiology', verificationStatus: 'APPROVED', availableDays: 'Mon,Tue,Wed,Thu,Fri', workingHours: '09:00 - 15:00', bio: 'Senior Cardiologist specializing in preventive heart health and lipid management.' },
-    { id: 2, userId: 3, fullName: 'Dr. Sneha Roy', email: 'sneha.roy@healthandcare.com', phone: '+91 98222 33445', qualification: 'BDS, MDS (Orthodontics)', specialization: 'Cosmetic & Restorative Dentistry', experienceYears: 8, consultationFee: 600, departmentName: 'Dental & Maxillofacial', verificationStatus: 'APPROVED', availableDays: 'Mon,Wed,Fri,Sat', workingHours: '10:00 - 18:00', bio: 'Specialist in smile design, invisible aligners, and painless dental care.' },
-    { id: 3, userId: 4, fullName: 'Dr. Vikram Seth', email: 'vikram.seth@healthandcare.com', phone: '+91 98333 44556', qualification: 'MBBS, MD (Pediatrics)', specialization: 'Pediatric Care & Immunization', experienceYears: 5, consultationFee: 500, departmentName: 'Pediatrics & Child Care', verificationStatus: 'PENDING', availableDays: 'Tue,Thu,Sat', workingHours: '09:00 - 14:00', bio: 'Pediatrician dedicated to early childhood wellness.' }
+    { id: 1, userId: 2, fullName: 'Dr. Rajesh Iyer', email: 'rajesh.iyer@healthandcare.com', phone: '+91 98111 22334', qualification: 'MD, DM (Cardiology)', specialization: 'Interventional Cardiology', experienceYears: 12, consultationFee: 800, departmentName: 'Cardiology', verificationStatus: 'APPROVED', availableDays: 'Mon,Tue,Wed,Thu,Fri', workingHours: '09:00 - 15:00', bio: 'Senior Cardiologist specializing in preventive heart health, angioplasty, and lipid management.' },
+    { id: 2, userId: 3, fullName: 'Dr. Sneha Roy', email: 'sneha.roy@healthandcare.com', phone: '+91 98222 33445', qualification: 'BDS, MDS (Orthodontics)', specialization: 'Cosmetic & Restorative Dentistry', experienceYears: 8, consultationFee: 600, departmentName: 'Dental & Maxillofacial', verificationStatus: 'APPROVED', availableDays: 'Mon,Wed,Fri,Sat', workingHours: '10:00 - 18:00', bio: 'Specialist in smile aesthetics, aligners, and painless dental restorations.' },
+    { id: 3, userId: 4, fullName: 'Dr. Vikram Seth', email: 'vikram.seth@healthandcare.com', phone: '+91 98333 44556', qualification: 'MBBS, MD (Pediatrics)', specialization: 'Pediatric Care & Immunization', experienceYears: 7, consultationFee: 500, departmentName: 'Pediatrics & Child Care', verificationStatus: 'APPROVED', availableDays: 'Mon,Tue,Thu,Sat', workingHours: '09:00 - 14:00', bio: 'Senior Pediatrician dedicated to childhood wellness, neonatal care, and developmental tracking.' },
+    { id: 4, userId: 9, fullName: 'Dr. Arjun Kapoor', email: 'arjun.kapoor@healthandcare.com', phone: '+91 98444 55667', qualification: 'MBBS, MS (Orthopedics), MCh', specialization: 'Orthopedic Surgery & Joint Care', experienceYears: 14, consultationFee: 900, departmentName: 'Orthopedics & Joint Care', verificationStatus: 'APPROVED', availableDays: 'Mon,Wed,Thu,Fri', workingHours: '10:00 - 16:00', bio: 'Consultant Orthopedic Surgeon specializing in joint replacement, sports trauma, and spine wellness.' },
+    { id: 5, userId: 10, fullName: 'Dr. Kavita Menon', email: 'kavita.menon@healthandcare.com', phone: '+91 98555 66778', qualification: 'MD (Dermatology, Venereology & Leprosy)', specialization: 'Clinical & Aesthetic Dermatology', experienceYears: 9, consultationFee: 750, departmentName: 'Dermatology & Skin Care', verificationStatus: 'APPROVED', availableDays: 'Tue,Wed,Fri,Sat', workingHours: '11:00 - 17:00', bio: 'Consultant Dermatologist providing clinical therapies, acne care, and dermatological wellness.' },
+    { id: 6, userId: 11, fullName: 'Dr. Farhan Qureshi', email: 'farhan.qureshi@healthandcare.com', phone: '+91 98666 77889', qualification: 'MD, DM (Neurology)', specialization: 'Neurology & Neuro-Rehabilitation', experienceYears: 15, consultationFee: 1000, departmentName: 'Neurology & Brain Health', verificationStatus: 'APPROVED', availableDays: 'Mon,Tue,Wed,Fri', workingHours: '09:30 - 15:30', bio: 'Senior Neurologist with expertise in stroke management, epilepsy, migraines, and cognitive disorders.' }
   ],
   patients: [
     { id: 1, userId: 5, fullName: 'Aarav Sharma', email: 'aarav.sharma@example.com', phone: '+91 98765 43210', dateOfBirth: '1992-05-14', gender: 'Male', bloodGroup: 'O+', address: '42 Marine Drive, Mumbai', emergencyContact: '+91 98765 00001' },
@@ -110,8 +113,90 @@ function fallbackHandler(endpoint, options, originalError) {
     return { success: true };
   }
   // Admin Patients
-  if (endpoint === '/admin/patients') {
+  if (endpoint === '/admin/patients' && method === 'GET') {
     return fallbackStore.patients;
+  }
+  if (endpoint === '/admin/patients' && method === 'POST') {
+    const newPt = {
+      id: Date.now(),
+      userId: Date.now(),
+      fullName: body.fullName,
+      email: body.email,
+      phone: body.phone,
+      dateOfBirth: body.dateOfBirth,
+      gender: body.gender,
+      bloodGroup: body.bloodGroup,
+      address: body.address,
+      emergencyContact: body.emergencyContact
+    };
+    fallbackStore.patients.unshift(newPt);
+    return newPt;
+  }
+  if (endpoint.startsWith('/admin/patients/') && method === 'PUT') {
+    const userId = parseInt(endpoint.split('/')[3], 10);
+    const pt = fallbackStore.patients.find(p => p.userId === userId || p.id === userId);
+    if (pt) {
+      Object.assign(pt, body);
+    }
+    return pt;
+  }
+  if (endpoint.startsWith('/admin/patients/') && method === 'DELETE') {
+    const userId = parseInt(endpoint.split('/')[3], 10);
+    fallbackStore.patients = fallbackStore.patients.filter(p => p.userId !== userId && p.id !== userId);
+    fallbackStore.appointments = fallbackStore.appointments.filter(a => a.patientId !== userId);
+    fallbackStore.prescriptions = fallbackStore.prescriptions.filter(pr => pr.patientId !== userId);
+    return { success: true, message: 'Patient deleted successfully' };
+  }
+  if (endpoint.startsWith('/admin/patients/') && endpoint.includes('/status') && method === 'PATCH') {
+    return { success: true };
+  }
+  // Admin Doctors POST / PUT / DELETE
+  if (endpoint === '/admin/doctors' && method === 'POST') {
+    const newDoc = {
+      id: Date.now(),
+      userId: Date.now(),
+      fullName: body.fullName,
+      email: body.email,
+      phone: body.phone,
+      qualification: body.qualification,
+      specialization: body.specialization,
+      experienceYears: body.experienceYears || 5,
+      consultationFee: body.consultationFee || 600,
+      departmentName: body.departmentName || 'General Medicine',
+      verificationStatus: 'APPROVED',
+      availableDays: body.availableDays || 'Mon,Tue,Wed,Thu,Fri',
+      workingHours: body.workingHours || '09:00 - 17:00'
+    };
+    fallbackStore.doctors.unshift(newDoc);
+    return newDoc;
+  }
+  if (endpoint.startsWith('/admin/doctors/') && method === 'PUT') {
+    const userId = parseInt(endpoint.split('/')[3], 10);
+    const doc = fallbackStore.doctors.find(d => d.userId === userId || d.id === userId);
+    if (doc) {
+      Object.assign(doc, body);
+    }
+    return doc;
+  }
+  if (endpoint.startsWith('/admin/doctors/') && method === 'DELETE') {
+    const userId = parseInt(endpoint.split('/')[3], 10);
+    fallbackStore.doctors = fallbackStore.doctors.filter(d => d.userId !== userId && d.id !== userId);
+    fallbackStore.appointments = fallbackStore.appointments.filter(a => a.doctorId !== userId);
+    return { success: true, message: 'Doctor deleted successfully' };
+  }
+  // Admin Appointments & Records
+  if (endpoint.startsWith('/admin/appointments/') && method === 'DELETE') {
+    const apptId = parseInt(endpoint.split('/')[3], 10);
+    fallbackStore.appointments = fallbackStore.appointments.filter(a => a.id !== apptId);
+    return { success: true, message: 'Appointment record deleted successfully' };
+  }
+  if (endpoint === '/admin/records/prescriptions') {
+    return fallbackStore.prescriptions;
+  }
+  if (endpoint.startsWith('/admin/records/prescriptions/') && method === 'DELETE') {
+    const prescId = parseInt(endpoint.split('/')[4], 10);
+    fallbackStore.prescriptions = fallbackStore.prescriptions.filter(pr => pr.id !== prescId);
+    return { success: true, message: 'Medical prescription record deleted successfully' };
   }
   // Appointments
   if (endpoint === '/admin/appointments' || endpoint === '/patient/appointments' || endpoint === '/doctor/appointments') {

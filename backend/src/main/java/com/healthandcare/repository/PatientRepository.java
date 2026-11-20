@@ -115,6 +115,11 @@ public class PatientRepository {
                 profile.getUserId()) > 0;
     }
 
+    public boolean deleteByUserId(Long userId) {
+        String sql = "DELETE FROM patient_profiles WHERE user_id = ?";
+        return jdbcTemplate.update(sql, userId) > 0;
+    }
+
     public long count() {
         String sql = "SELECT COUNT(*) FROM patient_profiles";
         Long count = jdbcTemplate.queryForObject(sql, Long.class);

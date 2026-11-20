@@ -154,6 +154,21 @@ public class PrescriptionRepository {
         return list;
     }
 
+    public List<Prescription> findAll() {
+        String sql = baseSelectQuery() + " ORDER BY pr.id DESC";
+        List<Prescription> list = jdbcTemplate.query(sql, prescriptionRowMapper);
+        for (Prescription p : list) {
+            p.setItems(findItemsByPrescriptionId(p.getId()));
+        }
+        return list;
+    }
+
+    public boolean deleteById(Long id) {
+        // Cascade removes items due to foreign key ON DELETE CASCADE
+        String sql = "DELETE FROM prescriptions WHERE id = ?";
+        return jdbcTemplate.update(sql, id) > 0;
+    }
+
     public List<PrescriptionItem> findItemsByPrescriptionId(Long prescriptionId) {
         String sql = "SELECT * FROM prescription_items WHERE prescription_id = ? ORDER BY id ASC";
         return jdbcTemplate.query(sql, itemRowMapper, prescriptionId);

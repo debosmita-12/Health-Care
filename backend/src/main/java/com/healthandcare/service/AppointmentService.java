@@ -102,4 +102,8 @@ public class AppointmentService {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment #" + id + " not found."));
     }
+
+    public boolean deleteAppointment(Long id) {
+        return appointmentRepository.deleteById(id);
+    }
 }
